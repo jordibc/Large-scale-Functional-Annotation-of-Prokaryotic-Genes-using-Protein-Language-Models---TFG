@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Class and functions to load the kegg data and serve it in a convenient
 format for pytorch.
@@ -13,8 +12,8 @@ from torch.utils.data import Dataset, DataLoader
 
 # Def class KeggDataset
 class KeggDataset(Dataset):
-    '''Convenience class to manage the kegg data derived from umap over
-    ProstT5 embeddings'''
+    """Convenience class to manage the kegg data derived from umap over
+    ProstT5 embeddings"""
 
     def __init__(self, xs, ys, labels):
         self.xs = Tensor(xs)
@@ -31,16 +30,16 @@ class KeggDataset(Dataset):
 
 def get_dataloaders(umap_file, labels_file,
                     test_size=0.25, batch_size=64, shuffle=False):
-    '''Return torch dataloaders for training and test data.'''
-    xs=np.load(umap_file)[:, :30]
-    y_labels=np.loadtxt(labels_file, delimiter=',', skiprows=0, dtype=str)
+    """Return torch dataloaders for training and test data."""
+    xs = np.load(umap_file)[:, :30]
+    y_labels = np.loadtxt(labels_file, delimiter=',', skiprows=0, dtype=str)
 
     labels = sorted(set(y_labels))
     assert len(labels) > 1, 'Only one label (you selected an invalid label?).'
 
     label2y = {labels[i]: i for i in range(len(labels))}
     ys = np.array([label2y[label] for label in y_labels])
-    
+
     _, counts = np.unique(y_labels, return_counts=True)
     weights = 1 / counts
     weights /= weights.sum()
