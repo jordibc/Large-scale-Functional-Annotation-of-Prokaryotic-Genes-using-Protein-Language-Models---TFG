@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "KOPNet"
+description = "Functional annotation of prokaryotic proteins using protein-LLMs"
+version = "0.9.0"
+authors = [
+  { name = "Laura Cano", email = "laura.cano@alumnos.upm.es" },
+  # { name = "Jordi Burguet-Castell", email = "j.burguet@upm.es" },
+]
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+  "Programming Language :: Python :: 3",
+]
+dependencies = ["h5py" "torch" "transfomers" "sentencepiece"]
+
+[project.urls]
+"Homepage" = "https://github.com/lcanoalmarza/Large-scale-Functional-Annotation-of-Prokaryotic-Genes-using-Protein-Language-Models---TFG"
