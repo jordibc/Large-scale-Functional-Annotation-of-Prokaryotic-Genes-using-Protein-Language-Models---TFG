@@ -15,7 +15,7 @@ requires-python = ">=3.7"
 classifiers = [
   "Programming Language :: Python :: 3",
 ]
-dependencies = ["h5py", "torch", "transfomers", "sentencepiece"]
+dependencies = ["h5py", "torch", "transformers", "sentencepiece"]
 
 [project.urls]
 "Homepage" = "https://github.com/lcanoalmarza/Large-scale-Functional-Annotation-of-Prokaryotic-Genes-using-Protein-Language-Models---TFG"
