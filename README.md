@@ -1,4 +1,4 @@
-# Large-scale Functional Annotation of Prokaryotic Genes using Protein Language Models
+# Functional Annotation with Protein Language Models
 
 ## Objectives
 
@@ -43,35 +43,57 @@ as high-memory nodes. In our case, we used:
 
 ## KOPNet training
 
-(1) Remove proteins with 100% identity using CD-HIT (https://github.com/weizhongli/cdhit)
+(1) Remove proteins with 100% identity using [cd-hit](https://github.com/weizhongli/cdhit).
 
-<pre> cd-hit -i input_sequences.fa -o non_red_sequences -c 1 -d 0 -n 5 -M 160000 -T 8 </pre>
+```sh
+cd-hit -i input_sequences.fa -o non_red_sequences \
+    -c 1 -d 0 -n 5 -M 160000 -T 8
+```
 
 (2) Extract metadata of non-redundant sequences
-<pre> python extract_metadata.py non_red_sequences.fa input_sequences.dat non_red_input_sequences.dat </pre>
+
+```sh
+python extract_metadata.py non_red_sequences.fa input_sequences.dat non_red_input_sequences.dat
+```
 
 (3) Per-protein embedding computing
-All per-protein embeddings were derived using the emebdder tool provided by ProtTrans in: https://github.com/agemagician/ProtTrans/blob/master/Embedding/prott5_embedder.py
-Note that, to use ProstT5 model instead of ProtT5, transformer name should be appropriatelly updated.
+
+All per-protein embeddings were derived using the embedder tool
+provided by ProtTrans in:
+https://github.com/agemagician/ProtTrans/blob/master/Embedding/prott5_embedder.py
+Note that, to use ProstT5 model instead of ProtT5, the transformer name
+should be appropriatelly updated.
 
 (4) Compute UMAP for training dataset derived from KEGG database
-<pre> python efficient_umap.py -m non_red_input_sequences.dat -e embeddings/ -o UMAP_reduction -n 40 -v </pre>
 
-Where ```embeddings/``` is the folder storing per-protein embeddings computed by ProstT5
+```sh
+python efficient_umap.py -m non_red_input_sequences.dat -e embeddings/ \
+    -o UMAP_reduction -n 40 -v
+```
+
+Where `embeddings/` is the folder storing per-protein embeddings computed by ProstT5
 
 (5) Propper formatting of labels
-<pre> python prepare_labels.py -input UMAP_reduction.npz --reference non_red_input_sequences.dat</pre>
 
-This will generate ```labels_ko.csv``` file suitable for training.
+```sh
+python prepare_labels.py -input UMAP_reduction.npz --reference non_red_input_sequences.dat
+```
+
+This will generate `labels_ko.csv` file suitable for training.
 
 (4) Train KOPNet
-<pre> python kos_nn.py --samples UMAP_reduction.npy --labels labels_ko.csv -s -e 3 -l 0.01 -n 100 400 1600 4000 6000 </pre>
+
+```sh
+python kos_nn.py --samples UMAP_reduction.npy --labels labels_ko.csv \
+    -s -e 3 -l 0.01 -n 100 400 1600 4000 6000
+```
 
 Where:
-    ```-s```: shuffles data instances to make neural network learning independent of data order
-    ```-e```: number of epochs for training
-    ```-l```: learning rate
-    ```-n```: each value defines number of neurons in the fully-connected layer of that layer's block
+
+- `-s`: shuffles data instances to make neural network learning independent of data order
+- `-e`: number of epochs for training
+- `-l`: learning rate
+- `-n`: each value defines number of neurons in the fully-connected layer of that layer's block
 
 
 ## Predict KO terms using KOPNet-pipeline
@@ -79,7 +101,13 @@ Where:
 (1) Per-protein embedding computing for target proteins (analogously to embedding computing in training)
 
 (2) Target protein reduction within UMAP model
-<pre> sample_UMAP_reduction.py --sample sample_embeddings/ --output reduced_sample </pre>
+
+```sh
+sample_UMAP_reduction.py --sample sample_embeddings/ --output reduced_sample
+```
 
 (3) Run KOPNet KO prediction
-<pre> python predict_ko.py --reduced_sample reduced_sample.npy --sample_ids reduced_sample_sample_ids.txt --output KOPNet_annotation.tsv </pre>
+
+```sh
+python predict_ko.py --reduced_sample reduced_sample.npy --sample_ids reduced_sample_sample_ids.txt --output KOPNet_annotation.tsv
+```
