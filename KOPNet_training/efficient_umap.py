@@ -1,56 +1,55 @@
 #!/usr/bin/env python
 
-# Compute one UMAP from information stored in different embeddings file
+"""
+Use embeddings to construct a UMAP, save it and save the reduced values of the embeddings.
+"""
 
-import h5py
-import glob
-import pandas as pd
-import umap
-import numpy as np
-import sys
-import argparse
 from datetime import datetime
+import glob
 import resource
 import gc
+from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter as fmt
+
 from tqdm import tqdm
-import joblib
+import umap
+import numpy as np
+import h5py
+import joblib  # to store the umap object
 
 
 def main():
-    args = parse_arguments()
+    args = get_args()
 
-    # Read metadata
-    metadata, selected_IDs = read_metadata(args.metadata)
+    log('Loading protein ids with associated kos...')
+    valid_ids = set(line.split()[0].replace('.', '_') for line in open(args.kos_file))
 
-    # Load embeddings
     log('Loading embeddings...')
-    embeddings, embeddings_ids = load_embeddings_for_umap(args.embeddings)
+    embeddings, prot_ids = load_embeddings_for_umap(args.embeddings)
 
-    # Build embeddings dict for UMAP input
-    log('Building dictionary with only annotated embeddings...')
-    emb_dict, filtered_ids, filtered_embeddings = build_embeddings_dict(embeddings_ids, embeddings, selected_IDs)
+    log('Filtering embeddings of proteins with associated ko...')
+    indices = [i for i, pid in enumerate(prot_ids) if pid in valid_ids]
+    filtered_ids = [prot_ids[i] for i in indices]
+    filtered_embeddings = embeddings[indices]
 
-    # Clear original embeddings to free memory
     log('Clearing original embeddings from memory...')
     del embeddings
     gc.collect()
 
-    # Perform UMAP
     log('Performing UMAP dimension reduction...')
-    reducer = umap.UMAP(n_components=args.ncomp, metric='euclidean',verbose=args.verbose)
-
+    reducer = umap.UMAP(n_components=args.ncomp, metric='euclidean', verbose=args.verbose)
     emb_umap = reducer.fit_transform(filtered_embeddings)
-    joblib.dump(reducer, f'{args.output}_umap_model.pkl')
 
-    # Save results
-    save_results(metadata, filtered_ids, emb_umap, args.output)
+    log('Saving umap model...')
+    joblib.dump(reducer, 'umap_model.pkl')
+
+    log('Saving umap embeddings...')
+    np.savez('umap_embeddings.npz',
+             ids=filtered_ids,  # protein ids
+             coordinates=emb_umap)  # umap embeddings
 
     log('End of script')  # includes the total execution time
 
 
-###############################################################################
-#                                 TRACK RESOURCES                             #
-###############################################################################
 t0 = datetime.now()
 
 def log(*args):
@@ -59,73 +58,27 @@ def log(*args):
     print(f'[{dt}] [{round(mem,2)} GB]', *args, flush=True)
 
 
-###############################################################################
-#                                 HANDLE ARGUMENTS                            #
-###############################################################################
+def get_args():
+    """Return the parsed command line arguments."""
+    parser = ArgumentParser(description=__doc__, formatter_class=fmt)
+    add = parser.add_argument
 
-def parse_arguments():
-    """Parse command line arguments with proper flags and help information."""
-    parser = argparse.ArgumentParser(
-        description="Process metadata and embeddings files for UMAP dimensional reduction",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
-    # Required arguments
-    parser.add_argument("-m", "--metadata",
-                        required=True,
-                        help="Path to the embedding's ko annotations (.csv)")
+    add('embeddings',
+        help='path to directory storing embeddings (.h5)')
 
-    parser.add_argument("-e", "--embeddings",
-                        required=True,
-                        help="Path to directory storing embeddings (.h5)")
+    add('kos_file',
+        help='file with protein ids and their kos, to only use proteins with kos')
 
-    parser.add_argument("-o", "--output",
-                        required=True,
-                        help="Name of output files")
+    add('-n', '--ncomp', type=int, default=2,
+        help='number of components for UMAP dimensionality reduction')
 
-    parser.add_argument("-n", "--ncomponents",
-                        type=int,
-                        default=2,
-                        help="Number of components for dimensionality reduction")
-
-    # Optional arguments example
-    parser.add_argument("-v", "--verbose",
-                        action="store_true",
-                        help="Enable verbose output")
+    add('-v', '--verbose', action='store_true')
 
     return parser.parse_args()
 
 
 ###############################################################################
-#                    READ METADATA OF ANNOTATED SEQUENCES                     #
-###############################################################################
-def read_metadata(metadata_file):
-    """
-    Reads file containing metadata from KEGG Orthology db.
-
-    Format:
-        - One line per protein
-        - Tab-separated files: 'sequence_ID', 'ko', 'length', 'description'
-
-    Returns:
-        - metadata (df): contains metadata file information
-        - selected_IDs (list): IDs in metadata
-    """
-    log('Reading metadata file...')
-    metadata = pd.read_csv(metadata_file,
-                    sep='\t',
-                    names=['sequence_ID', 'ko', 'length', 'description'],
-                    header=None)
-
-    # Optimize by converting to a set for faster lookups
-    metadata['sequence_ID'] = metadata['sequence_ID'].str.replace('.', '_', regex=False)
-    selected_IDs = set(metadata['sequence_ID'])  # Using set instead of list for O(1) lookups
-
-    log(f'Metadata loaded: {len(selected_IDs)} unique sequence IDs')
-    return metadata, selected_IDs
-
-
-###############################################################################
-#                 GET EMBEDDINGS FROM DIFFERENT H5 FILES                      #
+#                 GET EMBEDDINGS FROM H5 FILES                                #
 ###############################################################################
 
 def load_embeddings_for_umap(embeddings_path):
@@ -204,102 +157,6 @@ def load_embeddings_for_umap(embeddings_path):
     return all_embeddings, all_ids
 
 
-###############################################################################
-#                                   UMAP                                      #
-###############################################################################
-def build_embeddings_dict(ids, embeddings, selected_ids):
-    '''
-    Optimized version: Builds a dictionary matching keys: embedding IDs and values: embeddings.
-    Considers only proteins with embeddings and metadata annotation
-
-    Args:
-        ids: List of embedding IDs
-        embeddings: NumPy array of embeddings
-        selected_ids: Set of IDs to include
-
-    Returns:
-        Dictionary with filtered embeddings and list of corresponding IDs
-    '''
-    log('Building dictionary with only annotated embeddings...')
-
-    if len(ids) != len(embeddings):
-        raise ValueError("Length of ids and embeddings must match.")
-
-    # Create mask for faster filtering
-    mask = np.zeros(len(ids), dtype=bool)
-
-    # Build mask of IDs to keep
-    for i, emb_id in enumerate(ids):
-        if emb_id in selected_ids:  # Using set membership test (O(1))
-            mask[i] = True
-
-    # Get the indices where mask is True
-    indices = np.where(mask)[0]
-
-    # Create dictionary and filtered arrays in one go
-    filtered_ids = [ids[i] for i in indices]
-    filtered_embeddings = embeddings[indices]  # Fast NumPy indexing
-
-    # Build dictionary (if needed)
-    emb_dict = {filtered_ids[i]: filtered_embeddings[i] for i in range(len(filtered_ids))}
-
-    log(f'Built dictionary with {len(emb_dict)} annotated embeddings')
-
-    return emb_dict, filtered_ids, filtered_embeddings
-
-
-def save_results(metadata, annotated_ids, emb_umap, output_file):
-    """
-    Save UMAP results and correspondig KO annotation of each sequence
-
-    Input:
-        - metadata (df)
-        - annotated_ids (list): IDs of the filtered embeddings
-        - emb_umap (numpy array): umap coordinates
-        - output_file (str): base name for output files
-
-    Return: two files whose name is specified by -output argument
-        - output.csv: 1-col file storing ko annotation of each embedding
-        - ouput.npy: numpy file storing umap coordinates
-    """
-    log('Saving results...')
-
-    # Convert IDs to list if it's a set
-    if isinstance(annotated_ids, set):
-        annotated_ids = list(annotated_ids)
-
-    # Filter metadata efficiently
-    filtered_metadata = metadata[metadata['sequence_ID'].isin(annotated_ids)]
-
-    # Save KO annotations
-    with open(f'{output_file}.csv', "w") as f:
-        f.write("\n".join(filtered_metadata.iloc[:, 1].astype(str)) + "\n")
-
-    # Save UMAP result to .npy file
-    np.save(f'{output_file}.npy', emb_umap)
-
-    # Also save a mapping file for future reference
-    mapping_data = {
-        'ids': annotated_ids,
-        'coordinates': emb_umap
-    }
-    np.savez(f'{output_file}_mapping.npz', **mapping_data)
-
-    log('\n=== Results ===')
-    log(f'Embeddings KO annotation saved to {output_file}.csv')
-    log(f'UMAP results saved to {output_file}.npy')
-    log(f'ID-to-coordinate mapping saved to {output_file}_mapping.npz')
-
-
-#####################################################################
-#                           MAIN WORKFLOW                           #
-#####################################################################
 
 if __name__ == "__main__":
-    try:
-        main()
-    except Exception as e:
-        log(f'ERROR: {str(e)}')
-        import traceback
-        log(traceback.format_exc())
-        sys.exit(1)
+    main()
