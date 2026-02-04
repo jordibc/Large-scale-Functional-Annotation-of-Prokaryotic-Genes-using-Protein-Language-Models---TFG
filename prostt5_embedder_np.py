@@ -4,7 +4,7 @@
 Create T5 embeddings for a given (multi)fasta file and store them
 in numpy format.
 
-Differences with respect to the original:
+Differences with respect to the original prostt5_embedder.py by Rostlab:
 
 - Creates a npz file with keys 'seq_ids' and 'embeddings', named the
   same as the input file but ending in npz, instead of a h5 file whose
