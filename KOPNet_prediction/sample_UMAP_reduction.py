@@ -150,7 +150,7 @@ if __name__ == "__main__":
 
     # Perform umap
     log('Loading reducer...')
-    reducer_model = joblib.load(reducer)
+    reducer_model = joblib.load(reducer[0])
     log('Done!')
     log('Performing UMAP')
     sample_emb_reduced = reducer_model.transform(sample_emb)
