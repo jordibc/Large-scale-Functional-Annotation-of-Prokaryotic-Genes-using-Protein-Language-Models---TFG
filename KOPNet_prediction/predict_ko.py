@@ -1,19 +1,15 @@
 #!/usr/bin/env python
-# Load dependencies
+
 import numpy as np
 import pandas as pd
 import argparse
-import h5py
 import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, TensorDataset
-import glob
 import time
 from datetime import datetime
 import resource
 import gc
-from tqdm import tqdm
-import joblib
 import csv
 import pickle
 import sys
@@ -72,42 +68,42 @@ def get_ko_metric(ko, metric):
 def process_annotations_vectorized(probabilities, ko_terms, sample_ids, t, k):
     """Vectorized processing of annotations for maximum efficiency"""
     filtered_results = []
-    
+
     if t == -1 and k == 1:
         # Most efficient case: just get argmax using vectorized operations
         log('Using vectorized argmax for single best annotation...')
         max_indices = torch.argmax(probabilities, dim=1)
         max_probs = torch.gather(probabilities, 1, max_indices.unsqueeze(1)).squeeze(1)
-        
+
         for sample_id, max_idx, max_prob in zip(sample_ids, max_indices, max_probs):
             ko_id = ko_terms[max_idx.item()]
             filtered_results.append({
                 "sequence_id": sample_id,
                 "annotations": [(ko_id, max_prob.item())]
             })
-    
+
     elif k > 1:
         # Get top-k efficiently using torch.topk
         log(f'Using vectorized topk for {k} best annotations...')
         k_actual = min(k, len(ko_terms))
         top_probs, top_indices = torch.topk(probabilities, k=k_actual, dim=1, sorted=True)
-        
+
         for i, sample_id in enumerate(sample_ids):
             selected_annotations = [
-                (ko_terms[idx.item()], prob.item()) 
+                (ko_terms[idx.item()], prob.item())
                 for idx, prob in zip(top_indices[i], top_probs[i])
             ]
             filtered_results.append({
                 "sequence_id": sample_id,
                 "annotations": selected_annotations
             })
-    
+
     else:
         # Threshold-based: optimized with vectorized sorting and cumsum
         log(f'Using vectorized threshold processing (t={t})...')
         sorted_probs, sorted_indices = torch.sort(probabilities, dim=1, descending=True)
         cumsum_probs = torch.cumsum(sorted_probs, dim=1)
-        
+
         for i, sample_id in enumerate(sample_ids):
             # Find where cumulative sum exceeds threshold
             exceed_mask = cumsum_probs[i] > t
@@ -115,50 +111,50 @@ def process_annotations_vectorized(probabilities, ko_terms, sample_ids, t, k):
                 stop_idx = exceed_mask.nonzero(as_tuple=True)[0][0].item() + 1
             else:
                 stop_idx = len(sorted_probs[i])
-            
+
             selected_annotations = [
                 (ko_terms[sorted_indices[i][j].item()], sorted_probs[i][j].item())
                 for j in range(stop_idx)
             ]
-            
+
             filtered_results.append({
                 "sequence_id": sample_id,
                 "annotations": selected_annotations
             })
-    
+
     return filtered_results
 
 def create_ko_caches(filtered_results):
     """Pre-compute all KO metadata for efficient lookup"""
     log('Creating KO metadata caches...')
-    
+
     # Collect all unique KOs
     unique_kos = set()
     for entry in filtered_results:
         for ko, _ in entry["annotations"]:
             unique_kos.add(ko)
-    
+
     log(f'Caching metadata for {len(unique_kos)} unique KO terms...')
-    
+
     # Pre-compute all metadata
     ko_recall_cache = {}
     ko_precision_cache = {}
     ko_occurrence_cache = {}
     ko_name_cache = {}
-    
+
     for ko in unique_kos:
         ko_recall_cache[ko] = get_ko_metric(ko, "recall")
         ko_precision_cache[ko] = get_ko_metric(ko, "precision")
         ko_occurrence_cache[ko] = get_ko_metric(ko, 'model ocurrences')
         ko_name_cache[ko] = get_ko_name(ko)
-    
+
     return ko_recall_cache, ko_precision_cache, ko_occurrence_cache, ko_name_cache
 
 def write_results_optimized(filtered_results, output):
     """Optimized batch writing with pre-computed lookups"""
     log('Pre-computing KO metadata...')
     ko_recall_cache, ko_precision_cache, ko_occurrence_cache, ko_name_cache = create_ko_caches(filtered_results)
-    
+
     log('Writing results to output file...')
     with open(output, "w", newline="") as tsvfile:
         writer = csv.writer(tsvfile, delimiter="\t")
@@ -170,11 +166,11 @@ def write_results_optimized(filtered_results, output):
             "occurrences in training dataset",
             "KO name"
         ])
-        
+
         # Process in batches for better I/O performance
         batch_rows = []
         batch_size = 1000
-        
+
         for entry in filtered_results:
             ko_probs = entry["annotations"]
             annotations_str = ";".join(f"{ko}:{prob:.4f}" for ko, prob in ko_probs)
@@ -182,7 +178,7 @@ def write_results_optimized(filtered_results, output):
             prec_str = ";".join(ko_precision_cache[ko] for ko, _ in ko_probs)
             occ_str = ";".join(ko_occurrence_cache[ko] for ko, _ in ko_probs)
             names_str = ";".join(ko_name_cache[ko] for ko, _ in ko_probs)
-            
+
             batch_rows.append([
                 entry["sequence_id"],
                 annotations_str,
@@ -191,12 +187,12 @@ def write_results_optimized(filtered_results, output):
                 occ_str,
                 names_str
             ])
-            
+
             # Write in batches
             if len(batch_rows) >= batch_size:
                 writer.writerows(batch_rows)
                 batch_rows = []
-        
+
         # Write remaining rows
         if batch_rows:
             writer.writerows(batch_rows)
@@ -252,12 +248,12 @@ if __name__ == "__main__":
     # Load model files
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     log(f'Using computing device: {device}')
-    
+
     # Enable optimizations
     if device.type == 'cuda':
         torch.backends.cudnn.benchmark = True
         torch.backends.cudnn.deterministic = False
-    
+
     model = torch.load(m_weights, weights_only=False, map_location=device)
     model.eval()  # Critical for inference mode
     model.to(device)
@@ -280,7 +276,7 @@ if __name__ == "__main__":
     # Transform to tensor with memory optimization
     log('Converting to tensor...')
     x = torch.tensor(sample_emb_reduced, dtype=torch.float32)
-    
+
     # Clear the numpy array to free memory
     del sample_emb_reduced
     gc.collect()
@@ -288,11 +284,11 @@ if __name__ == "__main__":
     # Optimize batch size based on available resources
     batch_size = optimize_batch_size(len(sample_ids), device)
     log(f'Using optimized batch size: {batch_size}')
-    
+
     dataset = TensorDataset(x)
     dataloader = DataLoader(
-        dataset, 
-        batch_size=batch_size, 
+        dataset,
+        batch_size=batch_size,
         pin_memory=(device.type == 'cuda'),
         num_workers=0  # Avoid multiprocessing overhead for this use case
     )
@@ -309,18 +305,18 @@ if __name__ == "__main__":
                 batch_x = batch_x.to(device, non_blocking=True)
             else:
                 batch_x = batch_x.to(device)
-            
+
             pred = model(batch_x)
             probs = F.softmax(pred, dim=1)
-            
+
             # Move to CPU immediately to free GPU memory
             all_probs.append(probs.cpu())
-            
+
             # Progress reporting
             if batch_idx % max(1, total_batches // 10) == 0:
                 progress = (batch_idx + 1) * batch_size
                 log(f'Processed {min(progress, len(sample_ids))}/{len(sample_ids)} samples ({batch_idx+1}/{total_batches} batches)')
-            
+
             # Force garbage collection periodically
             if batch_idx % 50 == 0:
                 gc.collect()
@@ -328,11 +324,11 @@ if __name__ == "__main__":
     # Concatenate all probabilities
     log('Concatenating prediction results...')
     probabilities = torch.cat(all_probs, dim=0)
-    
+
     # Clear intermediate results to free memory
     del all_probs, x
     gc.collect()
-    
+
     log('Predictions completed!')
 
     # Load KO terms with optimized reading
@@ -340,7 +336,7 @@ if __name__ == "__main__":
     ko_terms_df = pd.read_csv(ko_terms_file, header=None, dtype=str)[0]
     ko_terms = sorted(set(ko_terms_df))
     del ko_terms_df  # Free memory
-    
+
     log('Loading KO metadata...')
     # Load KO terms names
     with open(f'{model_path}ko_names.pkl', 'rb') as f:
@@ -356,7 +352,7 @@ if __name__ == "__main__":
     # Process annotations using optimized vectorized approach
     log('Processing annotations with vectorized operations...')
     filtered_results = process_annotations_vectorized(probabilities, ko_terms, sample_ids, t, k)
-    
+
     # Clear probabilities tensor to free memory
     del probabilities
     gc.collect()
@@ -366,6 +362,6 @@ if __name__ == "__main__":
 
     log('Process completed successfully!')
     log(f'Results saved to: {output}')
-    
+
     # Final memory cleanup
     gc.collect()
