@@ -121,38 +121,36 @@ def test(dataloader, model, loss_fn):
 
     # Number of correct guesses and totals per label.
     n_labels = len(dataloader.dataset.labels)
-    ncorrect = [0] * n_labels
     ntotal = [0] * n_labels
-    
+
     # For precision calculation later
     true_positives = [0] * n_labels  # Correctly identified as class i
     predicted_totals = [0] * n_labels  # Total predicted as class i
-    
+
     with no_grad():  # we are not training, so no need to compute the gradient
         for X, y in dataloader:  # this dataloader should give only test data
             X, y = X.to(device), y.to(device)  # move to computing device
             pred = model(X)  # model prediction ("guess")
             loss += loss_fn(pred, y)
-            
+
             # Process each prediction
             for pred_i, y_i in zip(pred.cpu().numpy(), y.cpu().numpy()):
                 pred_class = pred_i.argmax()
                 true_class = y_i
-                
+
                 # Count prediction for the predicted class
                 predicted_totals[pred_class] += 1
-                
+
                 # Count correct predictions
                 if pred_class == true_class:
-                    ncorrect[true_class] += 1
                     true_positives[pred_class] += 1
-                
+
                 # Total count for each true class
                 ntotal[true_class] += 1
-    
+
     loss_avg = loss / len(dataloader)  # loss divided by number of batches
-    
-    return ncorrect, ntotal, true_positives, predicted_totals, loss_avg
+
+    return ntotal, true_positives, predicted_totals, loss_avg
 
 
 
@@ -210,12 +208,12 @@ def main():
         train(train_dloader, model, loss_fn, optimizer, args.quiet)
 
         if not args.quiet:
-            ncorrect, ntotal, _, _, loss_avg = test(test_dloader, model, loss_fn)
-            accuracy = sum(ncorrect) / sum(ntotal)
+            ntotal, true_pos, _, loss_avg = test(test_dloader, model, loss_fn)
+            accuracy = sum(true_pos) / sum(ntotal)
             log('Accuracy: %.1f %%, avg loss: %g\n' % (100*accuracy, loss_avg))
 
     # Compute metrics
-    ncorrect, ntotal, true_positives, predicted_totals, _ = test(test_dloader, model, loss_fn)
+    ntotal, true_positives, predicted_totals, _ = test(test_dloader, model, loss_fn)
     metric_name = f"{args.output}_" if args.output is not None else ""
 
     # Write metrics to file
@@ -224,32 +222,32 @@ def main():
         f.write('  Correct / Total    Recall    Precision    Label\n')
         per_class_recall = []
         per_class_precision = []
-    
-        for nc, nt, tp, pt, label in zip(ncorrect, ntotal, true_positives, predicted_totals, train_dloader.dataset.labels):
+
+        for nt, tp, pt, label in zip(ntotal, true_positives, predicted_totals, train_dloader.dataset.labels):
             # Recall = correct predictions for class / total samples of class
-            recall = nc / nt if nt > 0 else 0  
-        
+            recall = tp / nt if nt > 0 else 0
+
             # Precision = true positives for class / total predictions for class
             precision = tp / pt if pt > 0 else 0.0
-        
+
             per_class_recall.append(recall)
             per_class_precision.append(precision)
-        
-            f.write('  %5d / %-5d   %6.3f    %6.3f      %s\n' % (nc, nt, recall, precision, label))
-    
+
+            f.write('  %5d / %-5d   %6.3f    %6.3f      %s\n' % (tp, nt, recall, precision, label))
+
         # Calculate weighted metrics
         total_samples = sum(ntotal)
         total_predictions = sum(predicted_totals)
-    
+
         # Global Recall:
         recall = sum(r * nt for r, nt in zip(per_class_recall, ntotal)) / total_samples if total_samples > 0 else 0
-    
-        # Precision: 
+
+        # Precision:
         precision = sum(per_class_precision) / len(per_class_precision) if per_class_precision else 0
 
 	# Weighted precision:
         weighted_precision = sum(p * pt for p, pt in zip(per_class_precision, predicted_totals)) / total_predictions if total_predictions > 0 else 0
-    
+
         f.write('\nGlobal Recall:    %.4f\n' % recall)
         f.write('\nGlobal Precission:    %.4f\n' % precision)
         f.write('Weighted Global Precision: %.4f\n' % weighted_precision)
