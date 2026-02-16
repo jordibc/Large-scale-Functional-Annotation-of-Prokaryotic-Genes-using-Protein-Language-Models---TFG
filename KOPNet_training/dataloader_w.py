@@ -28,7 +28,7 @@ class KeggDataset(Dataset):
 
 
 def get_dataloaders(umap_file, labels_file,
-                    test_size=0.25, batch_size=64, shuffle=False):
+                    test_size=0.25, batch_size=64, shuffle=True):
     """Return torch dataloaders for training and test data."""
     xs = np.load(umap_file)[:, :30]
     y_labels = np.loadtxt(labels_file, delimiter=',', skiprows=0, dtype=str)
