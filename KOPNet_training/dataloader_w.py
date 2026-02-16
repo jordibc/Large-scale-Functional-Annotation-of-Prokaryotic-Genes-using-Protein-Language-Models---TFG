@@ -31,6 +31,9 @@ def get_dataloaders(umap_file, labels_file,
                     test_size=0.25, batch_size=64, shuffle=True):
     """Return torch dataloaders for training and test data."""
     xs = np.load(umap_file)[:, :30]
+    # FIXME: It seems like we are hardcoding taking 30 components of
+    # the umap. It'd be nice to document it and also make it a parameter.
+
     y_labels = np.loadtxt(labels_file, delimiter=',', skiprows=0, dtype=str)
 
     labels = sorted(set(y_labels))
@@ -41,6 +44,15 @@ def get_dataloaders(umap_file, labels_file,
     _, counts = np.unique(y_labels, return_counts=True)
     weights = 1 / counts
     weights /= weights.sum()
+    # TODO: Check, because this would give us the weights for the KOs
+    # in the order that appear in y_labels, but it seems to me that
+    # https://docs.pytorch.org/docs/stable/generated/torch.nn.CrossEntropyLoss.html
+    # expects them in the order of the ys (from 0 to the number of
+    # classes (KOs) -1). So that it would be:
+    #   unique, counts = np.unique(ys, return_counts=True)
+    #   counts_in_order = counts[unique]  # counts for class 0, class 1, etc
+    #   weights = 1 / counts_in_order
+    #   weights /= weights.sum()  # normalized
 
     if shuffle:
         indices = np.arange(ys.shape[0])
