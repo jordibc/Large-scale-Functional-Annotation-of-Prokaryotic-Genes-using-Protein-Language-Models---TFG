@@ -54,12 +54,20 @@ def get_dataloaders(umap_file, labels_file,
     #   weights = 1 / counts_in_order
     #   weights /= weights.sum()  # normalized
 
+    # Shuffle so we don't always train with the same data.
     if shuffle:
         xs, ys = shuffle_arrays(xs, ys)
 
-    n = int(len(ys) * (1 - test_size))  # we take the first n for training
-    data_train = KeggDataset(xs[:n], ys[:n], labels)
-    data_test = KeggDataset(xs[n:], ys[n:], labels)
+    nclasses = len(weights)  # number of different classes
+    xs_train, ys_train, xs_test, ys_test = split(xs, ys, nclasses, test_size)
+
+    # Shuffle the training data in case the order matters (it depends).
+    if shuffle:
+        xs_train, ys_train = shuffle_arrays(xs_train, ys_train)
+
+    data_train = KeggDataset(xs_train, ys_train, labels)
+    data_test = KeggDataset(xs_test, ys_test, labels)
+
     class_weights = FloatTensor(weights)
 
     return (DataLoader(data_train, batch_size=batch_size),
@@ -69,6 +77,33 @@ def get_dataloaders(umap_file, labels_file,
 
 def shuffle_arrays(xs, ys):
     """Return arrays xs and ys with values shuffled (same way for both)."""
-    indices = np.arange(ys.shape[0])
+    indices = np.arange(len(ys))
     np.random.shuffle(indices)
     return xs[indices], ys[indices]
+
+
+def split(xs, ys, nclasses=None, test_size=0.25):
+    """Split the arrays xs and ys into training and test data.
+
+    The ys must contain values 0 <= y < nclasses.
+
+    Both parts of the split have data for all classes: (1-test_size) of
+    training data (per class), and test_size of test data (per class).
+    """
+    nclasses = nclasses or len(set(ys))  # find nclasses if not given
+
+    # Make partitions (lists of xs per class).
+    ps = [[] for _ in range(nclasses)]
+    for x, y in zip(xs, ys):
+        ps[y].append(x)  # [[x0_c0, x1_c0, ...], [x0_c1, x1_c1, ...], ...]
+
+    # Divide partitions into train data and test data.
+    xs_train = [];  ys_train = []
+    xs_test  = [];  ys_test  = []
+    for i, p in enumerate(ps):
+        n = int(len(p) * (1 - test_size))  # we take the first n for training
+        xs_train.append(p[:n]);  ys_train.append([i]*n)
+        xs_test.append( p[n:]);  ys_test.append( [i]*(len(p) - n))
+
+    return (np.concat(xs_train), np.concat(ys_train),
+            np.concat(xs_test),  np.concat(ys_test))
