@@ -55,10 +55,7 @@ def get_dataloaders(umap_file, labels_file,
     #   weights /= weights.sum()  # normalized
 
     if shuffle:
-        indices = np.arange(ys.shape[0])
-        np.random.shuffle(indices)
-        xs = xs[indices]
-        ys = ys[indices]
+        xs, ys = shuffle_arrays(xs, ys)
 
     n = int(len(ys) * (1 - test_size))  # we take the first n for training
     data_train = KeggDataset(xs[:n], ys[:n], labels)
@@ -68,3 +65,10 @@ def get_dataloaders(umap_file, labels_file,
     return (DataLoader(data_train, batch_size=batch_size),
             DataLoader(data_test, batch_size=batch_size),
             class_weights)
+
+
+def shuffle_arrays(xs, ys):
+    """Return arrays xs and ys with values shuffled (same way for both)."""
+    indices = np.arange(ys.shape[0])
+    np.random.shuffle(indices)
+    return xs[indices], ys[indices]
