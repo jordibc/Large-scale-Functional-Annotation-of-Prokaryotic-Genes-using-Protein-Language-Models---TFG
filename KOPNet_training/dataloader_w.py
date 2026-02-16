@@ -34,7 +34,6 @@ def get_dataloaders(umap_file, labels_file,
     y_labels = np.loadtxt(labels_file, delimiter=',', skiprows=0, dtype=str)
 
     labels = sorted(set(y_labels))
-    assert len(labels) > 1, 'Only one label (you selected an invalid label?).'
 
     label2y = {labels[i]: i for i in range(len(labels))}
     ys = np.array([label2y[label] for label in y_labels])
