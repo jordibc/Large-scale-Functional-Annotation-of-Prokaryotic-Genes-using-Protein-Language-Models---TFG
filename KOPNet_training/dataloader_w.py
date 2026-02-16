@@ -10,7 +10,7 @@ import numpy as np
 from torch import Tensor, FloatTensor
 from torch.utils.data import Dataset, DataLoader
 
-# Def class KeggDataset
+
 class KeggDataset(Dataset):
     """Convenience class to manage the kegg data derived from umap over
     ProstT5 embeddings"""
@@ -26,7 +26,6 @@ class KeggDataset(Dataset):
     def __getitem__(self, idx):
         return self.xs[idx], self.ys[idx]
 
-# Def get_dataloaders
 
 def get_dataloaders(umap_file, labels_file,
                     test_size=0.25, batch_size=64, shuffle=False):
