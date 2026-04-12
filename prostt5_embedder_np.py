@@ -38,7 +38,7 @@ def main():
 
     fout = args.fasta.rsplit('.')[0] + '.npz'  # output file ending in npz
     seq_ids, embeddings = zip(*emb_dict.items())
-    np.savez(fout, seq_ids=seq_ids, embeddings=embeddings[0])
+    np.savez(fout, seq_ids=seq_ids, embeddings=embeddings)
 
     print(f'Created file "{fout}" with {len(embeddings)} embedding(s).')
 
