@@ -18,6 +18,7 @@ from datetime import datetime
 import resource
 import gc
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter as fmt
+import gzip
 
 import numpy as np
 import umap
@@ -28,7 +29,7 @@ def main():
     args = get_args()
 
     log('Loading protein ids with associated kos...')
-    valid_ids = set(line.split()[0] for line in open(args.kos_file))
+    valid_ids = set(line.split()[0] for line in zopen(args.kos_file))
 
     log('Loading embeddings...')
     seq_ids, embeddings = load_embeddings(args.embeddings)
@@ -54,7 +55,7 @@ def main():
     log('Saving umap embeddings...')
     np.savez('umap_embeddings.npz',
              ids=filtered_ids,  # protein ids
-             coordinates=emb_umap)  # umap embeddings
+             emb_umap=emb_umap)  # umap embeddings
 
     log('End of script')  # includes the total execution time
 
@@ -78,13 +79,19 @@ def get_args():
     return parser.parse_args()
 
 
-def load_embeddings(embeddings):
+def zopen(fname):
+    """Return the file object related to the given (possibly gzipped) file."""
+    # We could test like this too: open(fname, 'rb').read(2) == b'\x1f\x8b'
+    return gzip.open(fname, 'rt') if fname.endswith('.gz') else open(fname)
+
+
+def load_embeddings(embedding_files):
     """Return the ids and embeddings from the given list of embedding files."""
-    data = np.load(embeddings[0])  # the first one gives us the correct types
+    data = np.load(embedding_files[0])  # the first one gives us the correct types
     seq_ids = [normalize(sid) for sid in data['seq_ids']]
     embeddings = data['embeddings']
 
-    for f in embeddings[1:]:  # for the other files we just extend the arrays
+    for f in embedding_files[1:]:  # for the other files we just extend the arrays
         data = np.load(f)
         seq_ids = np.concat([seq_ids, [normalize(sid) for sid in data['seq_ids']]])
         embeddings = np.concat([embeddings, data['embeddings']])
