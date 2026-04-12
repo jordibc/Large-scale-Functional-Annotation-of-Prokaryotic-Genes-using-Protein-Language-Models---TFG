@@ -111,3 +111,36 @@ sample_UMAP_reduction.py --sample sample_embeddings/ --output reduced_sample
 ```sh
 python predict_ko.py --reduced_sample reduced_sample.npy --sample_ids reduced_sample_sample_ids.txt --output KOPNet_annotation.tsv
 ```
+
+## Alternative (_np.py) version
+
+The following assume we are in a directory with all the relevant
+programs there (`~jburguet/KOPNet/jordi_versions` for example).
+
+In `gpu02` to create the T5 embeddings:
+
+```sh
+conda_env
+source /home/lcano/mambaforge/bin/activate ProtTrans
+export LD_LIBRARY_PATH=/home/lcano/mambaforge/envs/ProtTrans/nsight-compute/2024.1.1/host/linux-desktop-glibc_2_11_3-x64:$LD_LIBRARY_PATH
+
+./prostt5_embedder_np.py jordi_100.fa
+# where jordi_100.fa comes from the following, edited to leave only the first 100 seqs
+# zcat /home/huerta/_Databases/kegg.07-24/genes/fasta/prokaryotes.pep.gz | head -n 1000 > jordi.fa
+```
+
+In `fat01` to create the UMAP embeddings (and train with them KOPNet):
+
+```sh
+conda_env
+source /home/lcano/mambaforge/bin/activate python
+cd KOPNet/jordi_versions  # instead of /testing_whole_implementation
+
+./efficient_umap_np.py jordi_100.npz \
+    /home/huerta/_Databases/kegg.07-24/genes/fasta/prokaryotes.dat.gz \
+    -n 40 -v
+
+./kos_nn_w_np.py umap_embeddings.npz \
+    -e 3 -n 100 400 -l 0.005 \
+    -o trained_model
+```
