@@ -36,7 +36,7 @@ def main():
 
     if args.valid_ids:
         valids = dict(line.strip().split() for line in open(args.valid_ids))
-        print(f'Using {len(valid_ids)} ids from {args.valid_ids}')
+        print(f'Using {len(valids)} ids from {args.valid_ids}')
     else:
         valids = None
 
