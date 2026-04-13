@@ -48,7 +48,7 @@ def main():
                         verbose=args.verbose)
     umap_embeddings = reducer.fit_transform(t5_embeddings)
 
-    out_model = args.out_model or 'umap_model.pkl')
+    out_model = args.out_model or 'umap_model.pkl'
     log(f'Saving UMAP model to {out_model}')
     joblib.dump(reducer, out_model)
 
@@ -57,7 +57,7 @@ def main():
     np.savez(out_embed,
              ids=ids,
              umap_embeddings=umap_embeddings,
-             kos=)
+             kos=kos)
 
 
 t0 = datetime.now()
