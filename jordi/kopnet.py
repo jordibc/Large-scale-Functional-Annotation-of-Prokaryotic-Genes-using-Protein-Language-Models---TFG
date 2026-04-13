@@ -109,7 +109,7 @@ def main():
     if args.output:
         print(f'\nSaving model to {args.output} ...')
         save(model, args.output)
-        log(help_using_saved_model(args.output))
+        log(help_using_saved_model(args.output, device))
 
 
 def get_args():
@@ -237,14 +237,14 @@ def test(dataloader, model, loss_fn):
     return ntotal, true_positives, predicted_totals, loss_avg
 
 
-def help_using_saved_model(name='model.pt'):
+def help_using_saved_model(name='model.pt', device='cuda'):
     return f"""
 To use the model (saved in '{name}') from python:
 
   import torch
-  from kopnet import ko_ProstT5_NN
+  from kopnet import ko_ProstT5_NN, ResidualLinearBlock
 
-  model = torch.load('{name}')  # load the file with the saved model
+  model = torch.load('{name}', weights_only=False, map_location='{device}')
 
   data = ...  # data like the one from the dataloader
   prediction = model(data)
