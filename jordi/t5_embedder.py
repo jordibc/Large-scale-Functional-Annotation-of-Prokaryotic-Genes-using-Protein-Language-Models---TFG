@@ -41,7 +41,7 @@ def main():
         valids = None
 
     seq_dict = read_fasta(args.fasta, valids)
-    print(f'Read {len(seq_dict)} sequences from {seq_path}')
+    print(f'Read {len(seq_dict)} sequences from {args.fasta}')
 
     emb_dict = get_embeddings(seq_dict, args.model, device=device,
                               per_protein=(not args.per_residue),
