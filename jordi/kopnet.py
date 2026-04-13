@@ -1,15 +1,19 @@
 #!/usr/bin/env python
 
 """
-Make a predictor of ko annotations using a neural network
+KOPNet.
 
+Neural network that uses umap embeddings and KO labels as inputs,
+and can be trained and then used to predict KOs for new sequences
+(after they have been transformed into T5 embeddings, and those
+have been transformed into UMAP embeddings using the previously
+saved umap model).
 """
 
 import sys
-from sklearn.metrics import recall_score
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter as fmt
 from torch import nn, optim, cuda, no_grad, save
-from dataloader_w_np import get_dataloaders
+from dataloaders import get_dataloaders
 
 
 def main():

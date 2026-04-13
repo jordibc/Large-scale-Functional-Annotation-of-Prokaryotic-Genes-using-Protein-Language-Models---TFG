@@ -1,5 +1,15 @@
 # Alternative versions
 
+## Pipeline order
+
+- 1. `find_valid_ids.py`
+- 2. `t5_embedder.py`
+- 3. `umap_embedder.py`
+- 4. `kopnet.py`
+
+
+## Running instructions
+
 The following assume we are in a directory with all the relevant
 programs there (`~jburguet/KOPNet/jordi_versions` for example).
 
