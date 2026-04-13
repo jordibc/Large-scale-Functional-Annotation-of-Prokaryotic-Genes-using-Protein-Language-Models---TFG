@@ -2,10 +2,10 @@
 
 ## Pipeline order
 
-- 1. `find_valid_ids.py`
-- 2. `t5_embedder.py`
-- 3. `umap_embedder.py`
-- 4. `kopnet.py`
+1. `find_valid_ids.py`
+2. `t5_embedder.py`
+3. `umap_embedder.py`
+4. `kopnet.py`
 
 
 ## Running instructions
