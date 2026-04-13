@@ -40,7 +40,7 @@ source /home/lcano/mambaforge/bin/activate python
 
 ./umap_embedder.py t5_embeddings.npz -n 40 -v
 
-./kos_nn_w_np.py umap_embeddings.npz \
+./kopnet.py umap_embeddings.npz \
     -e 3 -n 100 400 -l 0.005 \
     -o trained_model
 ```
