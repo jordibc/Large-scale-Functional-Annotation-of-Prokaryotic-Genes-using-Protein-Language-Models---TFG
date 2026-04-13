@@ -40,7 +40,7 @@ def main():
     else:
         valids = None
 
-    seq_dict = read_fasta(seq_path, valids)
+    seq_dict = read_fasta(args.fasta, valids)
     print(f'Read {len(seq_dict)} sequences from {seq_path}')
 
     emb_dict = get_embeddings(seq_dict, args.model, device=device,
