@@ -66,7 +66,7 @@ def get_args():
 
     add('fasta', help='fasta file with protein sequence(s)')
 
-    add('--out', help='output file (if not given, starts like the fasta file; ends in .npz)'
+    add('--out', help='output file (if not given, starts like the fasta file; ends in .npz)')
 
     add('--valid-ids', help='if given, only ids that appear in the file will be considered')
 
