@@ -6,10 +6,11 @@ in numpy format.
 
 Differences with respect to the original prostt5_embedder.py by Rostlab:
 
-- Creates a npz file with keys 'seq_ids' and 'embeddings', named the
-  same as the input file but ending in npz, instead of a h5 file whose
-  name must be specified
+- Creates a npz file with keys 'ids', 't5_embeddings', 'kos', named the
+  same as the input file but ending in npz (or given with --out), instead
+  of a h5 file whose name must be specified
 - Instead of calling it with  --input ...  we put directly the fasta file
+  (and it can be gzipped too)
 - By default the embeddings are mean-pooled per-protein, and to do them
   per residue the option is --per-residue (instead of --per_protein {0,1})
 - Accepts an argument --valid-ids to specify a file that limits for which
@@ -20,6 +21,7 @@ Differences with respect to the original prostt5_embedder.py by Rostlab:
 # Edited by JBC.
 
 from argparse import ArgumentParser
+import gzip
 
 import numpy as np
 import torch
@@ -33,12 +35,12 @@ def main():
     print(f'Using device: {device}')
 
     if args.valid_ids:
-        valid_ids = {line.split()[0] for line in open(args.valid_ids)}
+        valids = dict(line.strip().split() for line in open(args.valid_ids))
         print(f'Using {len(valid_ids)} ids from {args.valid_ids}')
     else:
-        valid_ids = None
+        valids = None
 
-    seq_dict = read_fasta(seq_path, valid_ids)
+    seq_dict = read_fasta(seq_path, valids)
     print(f'Read {len(seq_dict)} sequences from {seq_path}')
 
     emb_dict = get_embeddings(seq_dict, args.model, device=device,
@@ -47,9 +49,12 @@ def main():
                               max_seq_len=args.max_seq_len,
                               max_batch=args.max_batch)
 
-    fout = args.fasta.rsplit('.')[0] + '.npz'  # output file ending in npz
-    seq_ids, embeddings = zip(*emb_dict.items())
-    np.savez(fout, seq_ids=seq_ids, embeddings=embeddings)
+    fout = args.out or (args.fasta.rsplit('.')[0] + '.npz')  # ending in npz
+    ids, embeddings = zip(*emb_dict.items())
+    np.savez(fout,
+             ids=ids,
+             t5_embeddings=embeddings,
+             kos=[valids[pid] for pid in ids])
 
     print(f'Created file "{fout}" with {len(embeddings)} embedding(s).')
 
@@ -60,6 +65,8 @@ def get_args():
     add = parser.add_argument  # shortcut
 
     add('fasta', help='fasta file with protein sequence(s)')
+
+    add('--out', help='output file (if not given, starts like the fasta file; ends in .npz)'
 
     add('--valid-ids', help='if given, only ids that appear in the file will be considered')
 
@@ -138,11 +145,11 @@ def get_embeddings(seq_dict, model_dir, device,
     return emb_dict
 
 
-def read_fasta(fname, valid_ids=None):
+def read_fasta(fname, valids=None):
     """Return a dict  d[id] = seq  with the contents of a fasta file."""
     seqs = {}
 
-    for line in open(fname):
+    for line in zopen(fname):
         line = line.rstrip()  # remove trailing whitespace
 
         if not line or line.startswith(';'):
@@ -150,14 +157,20 @@ def read_fasta(fname, valid_ids=None):
         elif line.startswith('>'):
             pid = line[1:].replace('/', '_').replace('.', '_')
             # The replacements were to avoid misinterpretations when loading h5.
-            if valid_ids is not None and pid in valid_ids:
+            if valids is not None and pid in valids:
                 seqs[pid] = ''
         else:
-            if valid_ids is not None and pid in valid_ids:
+            if valids is not None and pid in valids:
                 seqs[pid] += line.upper().replace('-', '')
                 # Drop gaps and cast to upper-case, as in the original prostt5_embedder.py.
 
     return seqs
+
+
+def zopen(fname):
+    """Return the file object related to the given (possibly gzipped) file."""
+    # We could test like this too: open(fname, 'rb').read(2) == b'\x1f\x8b'
+    return gzip.open(fname, 'rt') if fname.endswith('.gz') else open(fname)
 
 
 def get_T5_model(model_dir, device, transformer_link='Rostlab/ProstT5'):
