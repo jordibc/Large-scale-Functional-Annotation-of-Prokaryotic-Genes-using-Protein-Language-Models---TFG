@@ -32,15 +32,17 @@ export LD_LIBRARY_PATH=/home/lcano/mambaforge/envs/ProtTrans/nsight-compute/2024
     /home/huerta/_Databases/kegg.07-24/genes/fasta/prokaryotes.pep.gz
 ```
 
-In `fat01` to create the UMAP embeddings (and train with them KOPNet):
+In `fat01` to create the UMAP embeddings:
 
 ```sh
 conda_env
 source /home/lcano/mambaforge/bin/activate python
 
 ./umap_embedder.py t5_embeddings.npz -n 40 -v
+```
 
-./kopnet.py umap_embeddings.npz \
-    -e 3 -n 100 400 -l 0.005 \
-    -o trained_model
+In a gpu node, train KOPNet from the UMAP embeddings:
+
+```sh
+./kopnet.py umap_embeddings.npz -e 3 -n 100 400 -l 0.005
 ```
