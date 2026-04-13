@@ -109,7 +109,7 @@ def main():
     if args.output:
         print(f'\nSaving model to {args.output} ...')
         save(model, args.output)
-        log(help_using_saved_model)
+        log(help_using_saved_model(args.output))
 
 
 def get_args():
@@ -118,24 +118,15 @@ def get_args():
 
     add = parser.add_argument  # shortcut
     add('emb_umap', help='file with the ids and umap embeddings')
-    add('-e', '--epochs', type=int, default=8,
-        help='number of epochs (iterations over the full training data)')
-    add('-n', '--hidden-sizes', type=int, nargs='+', default=[100],
-        help='neurons in the hidden layers')
-    add('-t', '--test-size', type=float, default=0.25,
-        help='fraction of data reserved for testing (not used for training)')
-    add('-l', '--learning-rate', type=float, default=1e-3,
-        help='learning rate (size of the step following the gradient)')
-    add('-b', '--batch-size', type=int, default=64,
-        help='batch size (number of samples to feed per model call)')
-    add('-d', '--device', choices=['cpu', 'cuda', 'auto'], default='auto',
-        help='device where to do the computations ("cuda" for GPU)')
-    add('-o', '--output',
-        help='file where to save the final model parameters')
-    add('--fix-order', action='store_true',
-        help='no data shuffling before separating into training and testing data')
-    add('-q', '--quiet', action='store_true',
-        help='be less verbose')
+    add('-e', '--epochs', type=int, default=8, help='number of epochs (iterations over the full training data)')
+    add('-n', '--hidden-sizes', type=int, nargs='+', default=[100], help='neurons in the hidden layers')
+    add('-t', '--test-size', type=float, default=0.25, help='fraction of data reserved for testing (not used for training)')
+    add('-l', '--learning-rate', type=float, default=1e-3, help='learning rate (size of the step following the gradient)')
+    add('-b', '--batch-size', type=int, default=64, help='batch size (number of samples to feed per model call)')
+    add('-d', '--device', choices=['cpu', 'cuda', 'auto'], default='auto', help='computing device ("cuda" for GPU)')
+    add('--output', default='model.pt', help='file where to save the final model parameters')
+    add('--fix-order', action='store_true', help='no data shuffling before separating into training and testing data')
+    add('-q', '--quiet', action='store_true', help='be less verbose')
 
     return parser.parse_args()
 
@@ -246,14 +237,14 @@ def test(dataloader, model, loss_fn):
     return ntotal, true_positives, predicted_totals, loss_avg
 
 
-
-help_using_saved_model = """
-To use the model (saved in 'model.pt' for example) from python:
+def help_using_saved_model(name='model.pt'):
+    return f"""
+To use the model (saved in '{name}') from python:
 
   import torch
-  from ko_nn import ko_ProstT5_NN
+  from kopnet import ko_ProstT5_NN
 
-  model = torch.load('model.pt')  # load the file with the saved model
+  model = torch.load('{name}')  # load the file with the saved model
 
   data = ...  # data like the one from the dataloader
   prediction = model(data)
