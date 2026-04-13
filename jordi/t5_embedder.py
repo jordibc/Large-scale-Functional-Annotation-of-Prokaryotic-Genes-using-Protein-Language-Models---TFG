@@ -155,7 +155,7 @@ def read_fasta(fname, valids=None):
         if not line or line.startswith(';'):
             pass
         elif line.startswith('>'):
-            pid = line[1:].replace('/', '_').replace('.', '_')
+            pid = line[1:].split()[0].replace('/', '_').replace('.', '_')
             # The replacements were to avoid misinterpretations when loading h5.
             if valids is not None and pid in valids:
                 seqs[pid] = ''
