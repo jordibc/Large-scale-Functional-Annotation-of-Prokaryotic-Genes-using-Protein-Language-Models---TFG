@@ -30,9 +30,10 @@ def get_dataloaders(emb_umap, test_size=0.25, batch_size=64, shuffle=True,
     """
     data = np.load(emb_umap)
 
-    y_labels, xs = data['ids'], data['emb_umap']
+    xs = data['umap_embeddings']
+    y_labels = data['kos']
 
-    xs = xs[:, :n_umap]  # take only n_umap components of the umap
+    xs = xs[:,:n_umap]  # take only n_umap components of the umap
 
     labels = sorted(set(y_labels))
 
