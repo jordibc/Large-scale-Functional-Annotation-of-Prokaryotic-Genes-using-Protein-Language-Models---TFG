@@ -38,7 +38,6 @@ def main():
     log('Creating neural network (model)...')
     nvalues = len(train_dloader.dataset[0][0])  # number of values per sample
     nkos = len(train_dloader.dataset.labels)  # number of possible kos
-    print(nkos)
     model = ko_ProstT5_NN(nvalues, args.hidden_sizes, nkos)
     model = model.to(device)  # move model to computing device
 
