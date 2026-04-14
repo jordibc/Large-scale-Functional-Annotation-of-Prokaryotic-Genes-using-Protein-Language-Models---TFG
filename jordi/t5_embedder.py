@@ -22,7 +22,7 @@ Differences with respect to the original prostt5_embedder.py by Rostlab:
 # Originally created on Wed Sep 23 18:33:22 2020 by mheinzinger.
 # Edited by JBC.
 
-from argparse import ArgumentParser
+from argparse import ArgumentParser, RawTextHelpFormatter as fmt
 import gzip
 
 import numpy as np
@@ -63,7 +63,7 @@ def main():
 
 def get_args():
     """Return the command-line arguments."""
-    parser = ArgumentParser(description=__doc__)
+    parser = ArgumentParser(description=__doc__, formatter_class=fmt)
     add = parser.add_argument  # shortcut
 
     add('fasta', help='fasta file with protein sequence(s)')
