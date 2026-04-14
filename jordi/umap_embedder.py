@@ -16,9 +16,7 @@ Differences with respect to the original:
 
 from datetime import datetime
 import resource
-import gc
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter as fmt
-import gzip
 
 import numpy as np
 import umap
@@ -79,12 +77,6 @@ def get_args():
     add('-n', '--ncomp', type=int, default=2, help='number of UMAP dimensions')
     add('-v', '--verbose', action='store_true', help='be more verbose')
     return parser.parse_args()
-
-
-def zopen(fname):
-    """Return the file object related to the given (possibly gzipped) file."""
-    # We could test like this too: open(fname, 'rb').read(2) == b'\x1f\x8b'
-    return gzip.open(fname, 'rt') if fname.endswith('.gz') else open(fname)
 
 
 def load_embeddings(embedding_files):
