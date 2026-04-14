@@ -9,10 +9,17 @@
 
 Their input and output files are:
 
-- `find_valid_ids.py` -- in: `dat` (KOs); out: `id_ko.txt` (valid ids and KOs)
-- `t5_embedder.py` -- in: `pep` (fastas), `id_ko.txt`; out: `t5_embeddings.npz` (includes ids and KOs)
-- `umap_embedder.py` -- in: `t5_embeddings.npz`; out: `umap_model.pkl`, `umap_embeddings.npz`
-- `kopnet.py` -- in: `umap_embeddings.npz`; out: `model.pt`
++---------------------+-----------------------------+--------------------------------------------+
+| program             | input                       | output                                     |
++=====================+=============================+============================================+
+| `find_valid_ids.py` | `dat` (KOs)                 | `id_ko.txt` (valid ids and KOs)            |
++---------------------+-----------------------------+--------------------------------------------+
+| `t5_embedder.py`    | `pep` (fastas), `id_ko.txt` | `t5_embeddings.npz` (includes ids and KOs) |
++---------------------+-----------------------------+--------------------------------------------+
+| `umap_embedder.py`  | `t5_embeddings.npz`         | `umap_embeddings.npz`, `umap_model.pkl`    |
++---------------------+-----------------------------+--------------------------------------------+
+| `kopnet.py`         | `umap_embeddings.npz`       | `model.pt`                                 |
++---------------------+-----------------------------+--------------------------------------------+
 
 
 ## Running instructions
