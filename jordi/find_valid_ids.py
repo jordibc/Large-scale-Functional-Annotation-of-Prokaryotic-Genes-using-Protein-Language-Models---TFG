@@ -31,10 +31,10 @@ def main():
     args = get_args()
 
     # Protein ids associated to each KO in the file.
-    print('Reading ids and KOs from:', args.kos_file)
+    print('Reading ids and KOs from:', args.dat)
 
     ko2ids = {}
-    for pid, ko in id_ko(args.kos_file, args.truncate):
+    for pid, ko in id_ko(args.dat, args.truncate):
         ko2ids.setdefault(ko, [])
         ko2ids[ko].append(pid)
 
@@ -42,7 +42,7 @@ def main():
     print('Writing:', args.id_out)
 
     with open(args.id_out, 'wt') as f:
-        for pid, ko in id_ko(args.kos_file, args.truncate):  # loop again
+        for pid, ko in id_ko(args.dat, args.truncate):  # loop again
             if len(ko2ids[ko]) >= args.min:  # valid?
                 f.write(f'{pid}\t{ko}\n')  # only write the valid values!
 
@@ -60,16 +60,11 @@ def get_args():
     parser = ArgumentParser(description=__doc__, formatter_class=fmt)
     add = parser.add_argument  # shortcut
 
-    # Defaults.
-    kos_file = '/home/huerta/_Databases/kegg.07-24/genes/fasta/prokaryotes.dat.gz'
-    id_out = 'id_ko.txt'
-    ko_out = 'ko_id.txt'
-
-    add('--kos-file', default=kos_file, help=f'file with protein ids and their KOs (default: {kos_file})')
-    add('--id-out', default=id_out, help=f'file that will have the valid ids and associated KOs (default: {id_out})')
-    add('--ko-out', default=ko_out, help=f'file that will have all KOs and their associated ids (default: {ko_out})')
-    add('--min', type=int, default=2, help=f'minimum number of associated ids for a KO to be considered valid (default: 2)')
-    add('--truncate', type=int, help='if specified, use only the first given number of lines from the KOs file (for tests)')
+    add('dat', help='file with protein ids and their KOs')  # like prokaryotes.dat.gz
+    add('--id-out', default='id_ko.txt', help='file that will have the valid ids and associated KOs (default: id_ko.txt)')
+    add('--ko-out', default='ko_id.txt', help='file that will have all KOs and their associated ids (default: ko_id.txt)')
+    add('--min', type=int, default=2, help='minimum number of associated ids for a KO to be considered valid (default: 2)')
+    add('--truncate', type=int, help='number of lines from the KOs file to use (for tests; if not given, use all)')
 
     return parser.parse_args()
 

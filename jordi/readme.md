@@ -27,7 +27,8 @@ In any machine with more than 40 GB or so:
 ```sh
 conda_env
 conda activate
-./find_valid_ids.py  # use  --truncate 1000  for tests with the first 1000
+./find_valid_ids.py \  # use  --truncate 1000  for tests with the first 1000
+    /home/huerta/_Databases/kegg.07-24/genes/fasta/prokaryotes.dat.gz
 ```
 
 In `gpu02` to create the T5 embeddings:
