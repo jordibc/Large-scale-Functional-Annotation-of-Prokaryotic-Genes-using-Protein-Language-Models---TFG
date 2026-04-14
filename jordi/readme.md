@@ -7,6 +7,13 @@
 3. `umap_embedder.py`
 4. `kopnet.py`
 
+Their input and output files are:
+
+- `find_valid_ids.py` -- in: `dat` (KOs); out: `id_ko.txt` (valid ids and KOs)
+- `t5_embedder.py` -- in: `pep` (fastas), `id_ko.txt`; out: `t5_embeddings.npz` (includes ids and KOs)
+- `umap_embedder.py` -- in: `t5_embeddings.npz`; out: `umap_model.pkl`, `umap_embeddings.npz`
+- `kopnet.py` -- in: `umap_embeddings.npz`; out: `model.pt`
+
 
 ## Running instructions
 
@@ -18,7 +25,7 @@ In any machine with more than 40 GB or so:
 ```sh
 conda_env
 conda activate
-./find_valid_ids.py  # maybe with  --truncate 1000  or similar for tests
+./find_valid_ids.py  # use  --truncate 1000  for tests with the first 1000
 ```
 
 In `gpu02` to create the T5 embeddings:
@@ -38,11 +45,11 @@ In `fat01` to create the UMAP embeddings:
 conda_env
 source /home/lcano/mambaforge/bin/activate python
 
-./umap_embedder.py t5_embeddings.npz -n 40 -v
+./umap_embedder.py -v -n 40 t5_embeddings.npz
 ```
 
 In a gpu node, train KOPNet from the UMAP embeddings:
 
 ```sh
-./kopnet.py umap_embeddings.npz -e 3 -n 100 400 -l 0.005
+./kopnet.py -e 3 -n 100 400 -l 0.005 umap_embeddings.npz
 ```
