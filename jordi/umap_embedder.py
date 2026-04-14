@@ -86,9 +86,9 @@ def load_embeddings(embedding_files):
 
     for f in embedding_files[1:]:  # for the other files just extend the arrays
         data = np.load(f)
-        np.append(ids, data['ids'], axis=0)
-        np.append(ems, data['t5_embeddings'], axis=0)
-        np.append(kos, data['kos'], axis=0)
+        ids = np.append(ids, data['ids'], axis=0)
+        ems = np.append(ems, data['t5_embeddings'], axis=0)
+        kos = np.append(kos, data['kos'], axis=0)
 
     return ids, ems, kos
 
