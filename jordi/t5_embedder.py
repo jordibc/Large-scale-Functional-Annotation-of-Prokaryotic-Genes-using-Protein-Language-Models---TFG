@@ -11,10 +11,10 @@ Differences with respect to the original prostt5_embedder.py by Rostlab:
   of a h5 file whose name must be specified
 - Instead of calling it with  --input ...  we put directly the fasta file
   (and it can be gzipped too)
+- Needs an extra argument with a file that limits the ids for whose
+  fastas we are actually going to compute the embeddings, and their KOs
 - By default the embeddings are mean-pooled per-protein, and to do them
   per residue the option is --per-residue (instead of --per_protein {0,1})
-- Accepts an argument --valid-ids to specify a file that limits for which
-  fastas we are actually going to compute the embeddings
 - Does not change the ids (it used to replace "/" and "." for "_" to avoid
   problems with the h5 files, which we don't have)
 """
