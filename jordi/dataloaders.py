@@ -93,8 +93,8 @@ def split(xs, ys, nclasses=None, test_size=0.25):
     xs_test  = [];  ys_test  = []
     for i, p in enumerate(ps):
         n = int(len(p) * (1 - test_size))  # we take the first n for training
-        xs_train.append(p[:n]);  ys_train.append([i]*n)
-        xs_test.append( p[n:]);  ys_test.append( [i]*(len(p) - n))
+        xs_train.extend(p[:n]);  ys_train.extend([i]*n)
+        xs_test.extend( p[n:]);  ys_test.extend( [i]*(len(p) - n))
 
-    return (np.concat(xs_train), np.concat(ys_train),
-            np.concat(xs_test),  np.concat(ys_test))
+    return (xs_train, ys_train,
+            xs_test,  ys_test)
