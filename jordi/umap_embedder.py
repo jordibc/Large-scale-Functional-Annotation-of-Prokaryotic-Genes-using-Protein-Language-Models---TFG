@@ -80,19 +80,19 @@ def get_args():
 
 
 def load_embeddings(embedding_files):
-    """Return the ids and embeddings from the given list of embedding files."""
+    """Return the ids, T5 embeddings and KOs from the given embedding files."""
     data = np.load(embedding_files[0])  # the first one gives us the correct types
     ids = data['ids']
-    t5_embeddings = data['t5_embeddings']
+    ems = data['t5_embeddings']
     kos = data['kos']
 
     for f in embedding_files[1:]:  # for the other files we just extend the arrays
         data = np.load(f)
-        ids = np.concat([ids, data['ids']])
-        t5_embeddings = np.concat([t5_embeddings, data['t5_embeddings']])
-        kos = np.concat([kos, data['kos']])
+        np.append(ids, data['ids'], axis=0)
+        np.append(ems, data['t5_embeddings'], axis=0)
+        np.append(kos, data['kos'], axis=0)
 
-    return ids, t5_embeddings, kos
+    return ids, ems, kos
 
 
 
