@@ -46,13 +46,11 @@ def main():
                         verbose=args.verbose)
     umap_embeddings = reducer.fit_transform(t5_embeddings)
 
-    out_model = args.out_model or 'umap_model.pkl'
-    log(f'Saving UMAP model to {out_model}')
-    joblib.dump(reducer, out_model)
+    log(f'Saving UMAP model to {args.out_model}')
+    joblib.dump(reducer, args.out_model)
 
-    out_embed = args.out_embed or 'umap_embeddings.npz'
-    log(f'Saving UMAP embeddings to {out_embed}')
-    np.savez(out_embed,
+    log(f'Saving UMAP embeddings to {args.out_embed}')
+    np.savez(args.out_embed,
              ids=ids,
              umap_embeddings=umap_embeddings,
              kos=kos)
