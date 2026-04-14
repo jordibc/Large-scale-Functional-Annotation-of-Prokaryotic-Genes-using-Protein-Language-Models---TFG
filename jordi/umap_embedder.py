@@ -90,22 +90,17 @@ def zopen(fname):
 def load_embeddings(embedding_files):
     """Return the ids and embeddings from the given list of embedding files."""
     data = np.load(embedding_files[0])  # the first one gives us the correct types
-    ids = [normalize(sid) for sid in data['ids']]
+    ids = data['ids']
     t5_embeddings = data['t5_embeddings']
     kos = data['kos']
 
     for f in embedding_files[1:]:  # for the other files we just extend the arrays
         data = np.load(f)
-        ids = np.concat([ids, [normalize(sid) for sid in data['ids']]])
+        ids = np.concat([ids, data['ids']])
         t5_embeddings = np.concat([t5_embeddings, data['t5_embeddings']])
         kos = np.concat([kos, data['kos']])
 
     return ids, t5_embeddings, kos
-
-
-def normalize(pid):
-    """Return a protein id "normalized" as it appears in the kos file."""
-    return pid.split()[0].replace('.', '_')  # 'eco:b0001  thrL; ...' -> 'eco:b0001'
 
 
 

@@ -15,6 +15,8 @@ Differences with respect to the original prostt5_embedder.py by Rostlab:
   per residue the option is --per-residue (instead of --per_protein {0,1})
 - Accepts an argument --valid-ids to specify a file that limits for which
   fastas we are actually going to compute the embeddings
+- Does not change the ids (it used to replace "/" and "." for "_" to avoid
+  problems with the h5 files, which we don't have)
 """
 
 # Originally created on Wed Sep 23 18:33:22 2020 by mheinzinger.
@@ -155,8 +157,7 @@ def read_fasta(fname, valids=None):
         if not line or line.startswith(';'):
             pass
         elif line.startswith('>'):
-            pid = line[1:].split()[0].replace('/', '_').replace('.', '_')
-            # The replacements were to avoid misinterpretations when loading h5.
+            pid = line[1:].split()[0]
             if valids is not None and pid in valids:
                 seqs[pid] = ''
         else:
