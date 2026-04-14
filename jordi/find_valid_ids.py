@@ -41,8 +41,8 @@ def main():
     # Write id_ko.txt with only valid values.
     print('Writing:', args.id_out)
 
-    with open(args.id_out, 'wt') as f:  # we loop again over the original file
-        for pid, ko in id_ko(args.kos_file, args.truncate):
+    with open(args.id_out, 'wt') as f:
+        for pid, ko in id_ko(args.kos_file, args.truncate):  # loop again
             if len(ko2ids[ko]) >= args.min:  # valid?
                 f.write(f'{pid}\t{ko}\n')  # only write the valid values!
 
