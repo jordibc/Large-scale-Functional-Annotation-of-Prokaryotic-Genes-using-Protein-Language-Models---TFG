@@ -96,5 +96,4 @@ def split(xs, ys, nclasses=None, test_size=0.25):
         xs_train.extend(p[:n]);  ys_train.extend([i]*n)
         xs_test.extend( p[n:]);  ys_test.extend( [i]*(len(p) - n))
 
-    return (xs_train, ys_train,
-            xs_test,  ys_test)
+    return [np.array(a) for a in [xs_train, ys_train, xs_test, ys_test]]
