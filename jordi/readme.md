@@ -38,8 +38,9 @@ conda_env
 source /home/lcano/mambaforge/bin/activate ProtTrans
 export LD_LIBRARY_PATH=/home/lcano/mambaforge/envs/ProtTrans/nsight-compute/2024.1.1/host/linux-desktop-glibc_2_11_3-x64:$LD_LIBRARY_PATH
 
-./t5_embedder.py --valid-ids id_ko.txt --out t5_embeddings.npz \
-    /home/huerta/_Databases/kegg.07-24/genes/fasta/prokaryotes.pep.gz
+./t5_embedder.py --out t5_embeddings.npz \
+    /home/huerta/_Databases/kegg.07-24/genes/fasta/prokaryotes.pep.gz \
+    id_ko.txt
 ```
 
 In `fat01` to create the UMAP embeddings:

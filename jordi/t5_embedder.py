@@ -36,13 +36,10 @@ def main():
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     print(f'Using device: {device}')
 
-    if args.valid_ids:
-        valids = dict(line.strip().split() for line in open(args.valid_ids))
-        print(f'Using {len(valids)} ids from {args.valid_ids}')
-    else:
-        valids = None
+    id2ko = dict(line.strip().split() for line in open(args.id_ko))
+    print(f'Using {len(id2ko)} ids from {args.id_ko}')
 
-    seq_dict = read_fasta(args.fasta, valids)
+    seq_dict = read_fasta(args.fasta, id2ko)
     print(f'Read {len(seq_dict)} sequences from {args.fasta}')
 
     emb_dict = get_embeddings(seq_dict, args.model, device=device,
@@ -56,7 +53,7 @@ def main():
     np.savez(fout,
              ids=ids,
              t5_embeddings=embeddings,
-             kos=[valids[pid] for pid in ids])
+             kos=[id2ko[pid] for pid in ids])
 
     print(f'Created file "{fout}" with {len(embeddings)} embedding(s).')
 
@@ -67,11 +64,9 @@ def get_args():
     add = parser.add_argument  # shortcut
 
     add('fasta', help='fasta file with protein sequence(s)')
+    add('id_ko', help='file with the ids to use and their associated KOs')  # like id_ko.txt
 
     add('--out', help='output file (if not given, starts like the fasta file; ends in .npz)')
-
-    add('--valid-ids', help='if given, only ids that appear in the file will be considered')
-
     add('--model', help='path to a checkpoint of the pre-trained model')
     add('--per-residue', action='store_true',
         help='return per-residue embeddings instead of mean-pooled per-protein representation')
@@ -147,8 +142,8 @@ def get_embeddings(seq_dict, model_dir, device,
     return emb_dict
 
 
-def read_fasta(fname, valids=None):
-    """Return a dict  d[id] = seq  with the contents of a fasta file."""
+def read_fasta(fname, id2ko):
+    """Return {id: seq} from the fasta file fname, only for ids in id2ko."""
     seqs = {}
 
     for line in zopen(fname):
@@ -158,10 +153,10 @@ def read_fasta(fname, valids=None):
             pass
         elif line.startswith('>'):
             pid = line[1:].split()[0]
-            if valids is not None and pid in valids:
+            if pid in id2ko:
                 seqs[pid] = ''
         else:
-            if valids is not None and pid in valids:
+            if pid in id2ko:
                 seqs[pid] += line.upper().replace('-', '')
                 # Drop gaps and cast to upper-case, as in the original prostt5_embedder.py.
 
