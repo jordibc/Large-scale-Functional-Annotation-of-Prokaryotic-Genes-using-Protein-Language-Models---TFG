@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 Use T5 embeddings (from a numpy file) to construct a UMAP, save it and

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 Use the KEGG ".dat" file with KOs information to generate the following files:
