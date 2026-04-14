@@ -22,7 +22,7 @@ class KeggDataset(Dataset):
 
 
 def get_dataloaders(emb_umap, test_size=0.25, batch_size=64, shuffle=True,
-                    n_umap=30):
+                    n_umap=None):
     """Return torch dataloaders for training and test data.
 
     Args:
@@ -33,7 +33,8 @@ def get_dataloaders(emb_umap, test_size=0.25, batch_size=64, shuffle=True,
     xs = data['umap_embeddings']
     y_labels = data['kos']
 
-    xs = xs[:,:n_umap]  # take only n_umap components of the umap
+    if n_umap is not None:
+        xs = xs[:,:n_umap]  # take only n_umap components of the umap
 
     labels = sorted(set(y_labels))
 

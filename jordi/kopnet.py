@@ -31,7 +31,8 @@ def main():
         emb_umap=args.emb_umap,
         test_size=args.test_size,
         batch_size=args.batch_size,
-        shuffle=(not args.fix_order))
+        shuffle=(not args.fix_order),
+        n_umap=args.n_umap)
 
     ko_weights = ko_weights.to(device)   # You (Laura?) changed this
 
@@ -117,7 +118,7 @@ def get_args():
     parser = ArgumentParser(description=__doc__, formatter_class=fmt)
 
     add = parser.add_argument  # shortcut
-    add('emb_umap', help='file with the ids and umap embeddings')
+    add('emb_umap', help='file with the ids and UMAP embeddings')
     add('-e', '--epochs', type=int, default=8, help='number of epochs (iterations over the full training data)')
     add('-n', '--hidden-sizes', type=int, nargs='+', default=[100], help='neurons in the hidden layers')
     add('-t', '--test-size', type=float, default=0.25, help='fraction of data reserved for testing (not used for training)')
@@ -126,6 +127,7 @@ def get_args():
     add('-d', '--device', choices=['cpu', 'cuda', 'auto'], default='auto', help='computing device ("cuda" for GPU)')
     add('--output', default='model.pt', help='file where to save the final model parameters')
     add('--fix-order', action='store_true', help='no data shuffling before separating into training and testing data')
+    add('--n-umap', type=int, help='number of UMAP components to use (if not given, use all the available)')
     add('-q', '--quiet', action='store_true', help='be less verbose')
 
     return parser.parse_args()

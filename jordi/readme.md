@@ -53,5 +53,5 @@ source /home/lcano/mambaforge/bin/activate python
 In a gpu node, train KOPNet from the UMAP embeddings:
 
 ```sh
-./kopnet.py -e 3 -n 100 400 -l 0.005 umap_embeddings.npz
+./kopnet.py -e 5 -n 100 400 -l 0.005 --n-umap 30 umap_embeddings.npz
 ```
