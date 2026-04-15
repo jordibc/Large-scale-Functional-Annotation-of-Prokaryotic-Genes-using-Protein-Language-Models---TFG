@@ -26,20 +26,11 @@ import joblib  # to store the umap object
 def main():
     args = get_args()
 
-    log('Loading T5 embeddings...')
     ids, t5_embeddings, kos = load_embeddings(args.embeddings)
-    log(f'Loaded {len(t5_embeddings)} T5 embeddings.')
-
 
     if args.valid_ids:
-        valids = {line.split()[0] for line in open(args.valid_ids)}
-        print(f'Using {len(valids)} ids from {args.valid_ids}')
-
-        indices = [i for i, pid in enumerate(ids) if pid in valids]
-        ids = ids[indices]
-        t5_embeddings = t5_embeddings[indices]
-        kos = kos[indices]
-        log(f'{len(indices)} remain.')
+        ids, t5_embeddings, kos = filter_valid(ids, t5_embeddings, kos,
+                                               args.valid_ids)
 
     log('Performing UMAP dimension reduction...')
     reducer = umap.UMAP(n_components=args.ncomp, metric='euclidean',
@@ -79,18 +70,37 @@ def get_args():
 
 def load_embeddings(embedding_files):
     """Return the ids, T5 embeddings and KOs from the given embedding files."""
-    data = np.load(embedding_files[0])  # get the 1st, to get the correct types
+    # Get the arrays from the first file, so we start with the correct types.
+    fname = embedding_files[0]
+    log('Loading T5 embeddings from:', fname)
+    data = np.load(fname)
     ids = data['ids']
     ems = data['t5_embeddings']
     kos = data['kos']
 
-    for f in embedding_files[1:]:  # for the other files just extend the arrays
-        data = np.load(f)
+    # Extend the arrays with the data from the rest of the files.
+    for fname in embedding_files[1:]:
+        log('Adding T5 embeddings from:', fname)
+        data = np.load(fname)
         ids = np.append(ids, data['ids'], axis=0)
         ems = np.append(ems, data['t5_embeddings'], axis=0)
         kos = np.append(kos, data['kos'], axis=0)
 
+    log('Number of loaded T5 embeddings:', len(ems))
+
     return ids, ems, kos
+
+
+def filter_valid(ids, t5_embeddings, kos, valid_ids_file):
+    """Return arrays filtered by the valid ids given in the file."""
+    log('Loading valid ids from:', valid_ids_file)
+    valid_ids = {line.split()[0] for line in open(valid_ids_file)}
+    log(f'Number of loaded valid ids:', len(valid_ids))
+
+    indices = [i for i, pid in enumerate(ids) if pid in valid_ids]
+    log('Number of embeddings after filtering will be:', len(indices))
+
+    return ids[indices], t5_embeddings[indices], kos[indices]
 
 
 
