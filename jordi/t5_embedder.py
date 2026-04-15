@@ -34,28 +34,31 @@ def main():
     args = get_args()
 
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    print(f'Using device: {device}')
+    print('Using device:', device)
 
+    print('Reading file with ids to use and their KOs:', args.id_ko)
     id2ko = dict(line.strip().split() for line in open(args.id_ko))
-    print(f'Using {len(id2ko)} ids from {args.id_ko}')
+    print('Number of ids:', len(id2ko))
 
+    print('Reading sequences that match those ids, from:', args.fasta)
     seq_dict = read_fasta(args.fasta, id2ko)
-    print(f'Read {len(seq_dict)} sequences from {args.fasta}')
+    print('Number of sequences:', len(seq_dict))
 
+    print('Generating embeddings...')
     emb_dict = get_embeddings(seq_dict, args.model, device=device,
                               per_protein=(not args.per_residue),
                               max_residues=args.max_residues,
                               max_seq_len=args.max_seq_len,
                               max_batch=args.max_batch)
+    print('Number of embeddings:', len(embeddings))
 
     fout = args.out or (args.fasta.rsplit('.')[0] + '.npz')  # ending in npz
+    print('Saving data to file:', fout)
     ids, embeddings = zip(*emb_dict.items())
     np.savez(fout,
              ids=ids,
              t5_embeddings=embeddings,
              kos=[id2ko[pid] for pid in ids])
-
-    print(f'Created file "{fout}" with {len(embeddings)} embedding(s).')
 
 
 def get_args():
