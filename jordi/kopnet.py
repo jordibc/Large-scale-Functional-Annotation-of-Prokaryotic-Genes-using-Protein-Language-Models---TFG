@@ -3,11 +3,11 @@
 """
 KOPNet.
 
-Neural network that uses umap embeddings and KO labels as inputs,
+Neural network that uses UMAP embeddings and KO labels as inputs,
 and can be trained and then used to predict KOs for new sequences
 (after they have been transformed into T5 embeddings, and those
 have been transformed into UMAP embeddings using the previously
-saved umap model).
+saved UMAP model).
 """
 
 import sys
